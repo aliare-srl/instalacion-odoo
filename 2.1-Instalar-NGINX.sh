@@ -5,6 +5,61 @@ echo "(o subdominio) y con HTTPS, instalando un certificado SSL Let’s Encrypt.
 sudo apt install nginx
 
 echo "desde el navegador colocando el ip de la maquina ya debería aparecer la binvenida de nginx si esta bien instalado"
+#######SSL#####################
+#Es necesario tener un dominio (uso aliare.com.ar)
+sudo apt update
+sudo apt install software-properties-common
+
+#se agrega un repositorio para cert bot
+sudo add-apt-repository ppa:certbot/certbot
+
+#instalo certbot
+sudo apt update
+sudo apt install certbot
+
+#genra una clave DH (diffie hellman)
+sudo openssl dhparam -out /etc/ssl/certs/dhparam.pem 2048
+
+# puede ser tb de 4096 bits pero tardaria como 30 min
+
+#obtencion del certificado SSL
+sudo mkdir -p /var/lib/letsencrypt/.well-known
+sudo chgrp www-data /var/lib/letsencrypt
+sudo chmod g+s /var/lib/letsencrypt
+
+#creo archivos
+sudo nano /etc/nginx/snippets/letsencrypt.conf
+#inicio
+location ^~ /.well-known/acme-challenge/ {
+  allow all;
+  root /var/lib/letsencrypt/;
+  default_type "text/plain";
+  try_files $uri =404;
+}
+#fin
+
+sudo nano /etc/nginx/snippets/ssl.conf
+#inicio
+
+ssl_dhparam /etc/ssl/certs/dhparam.pem;
+
+ssl_session_timeout 1d;
+ssl_session_cache shared:SSL:50m;
+ssl_session_tickets off;
+
+ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+ssl_ciphers 'ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA:ECDHE-ECDSA-DES-CBC3-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:DES-CBC3-SHA:!DSS';
+ssl_prefer_server_ciphers on;
+
+ssl_stapling on;
+ssl_stapling_verify on;
+resolver 8.8.8.8 8.8.4.4 valid=300s;
+resolver_timeout 30s;
+
+add_header Strict-Transport-Security "max-age=15768000; includeSubdomains; preload";
+add_header X-Frame-Options SAMEORIGIN;
+add_header X-Content-Type-Options nosniff;
+#FIN
 
 echo "Ahora crearemos un vHost de Nginx para el dominio (o subdominio en nuestro caso) y lo configuraremos "
 echo "con la modalidad de proxy reverso."
@@ -13,18 +68,15 @@ echo "Deberás reemplazar el nombre del archivo y el valor de server_name con tu
 
 cd /etc/nginx/sites-available
 
-sudo nano odoo.aliare.com.ar
+sudo nano aliare.com.ar
 
 #copiar este contenido en el archivo, reemplazar el ip por el dominio, o por otro IP publico.
 
 server {
-        listen 80 default_server;
-        server_name 200.58.103.232;
-        
+  listen 80;
+  server_name aliare.com.ar www.aliare.com.ar;
 
-        location / {
-                proxy_pass http://127.0.0.1:8069/;
-        }
+  include snippets/letsencrypt.conf;
 }
 
 
@@ -36,20 +88,115 @@ cd /etc/nginx/sites-enabled
 
 rm default
 
-sudo ln -s /etc/nginx/sites-available/odooaliare.com.ar odoo.aliare.com.ar
+sudo ln -s /etc/nginx/sites-available/aliare.com.ar aliare.com.ar
 
 #si la ste linea no da error esta todo ok
 
 sudo nginx -t 
 
+#sudo systemctl reload nginx
+
 #se reinicia el nginx 
 systemctl restart nginx.service 
 
-#ya se podria acceder desde el ip publico al odoo.
+# para obtener el certificado SSL 
 
-#Instalar certificado SSL certificado SSL Let’s Encrypt instalando en primer lugar el programa Certbot.
-sudo apt install certbot python3-certbot-nginx
+sudo certbot certonly --agree-tos --email fabian@aliare.com.ar --webroot -w /var/lib/letsencrypt/ -d aliare.com.ar -d www.aliare.com.ar
 
-#Una vez instalado Certbot, generaremos e instalaremos el certificado SSL para nuestro dominio (o subdominio
-certbot --nginx -d odoo.aliare.com.ar
+# deberia dar un mensaje como IMPORTANT NOTES: - Congratulations! Your certificate and chain have been saved at:   /etc/letsencrypt/live/example.com/fullchain.pem
+#Your key file has been ...
+
+#Ahora edito el archivo de sites - available "aliare.com.ar"
+#inicio aliare.com.ar
+
+upstream odoo {
+ server 127.0.0.1:8069;
+}
+
+upstream odoo-chat {
+ server 127.0.0.1:8072;
+}
+server {
+    listen 80;
+    server_name www.aliare.com.ar aliare.com.ar;
+
+    include snippets/letsencrypt.conf;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name www.aliare.com.ar;
+
+    ssl_certificate /etc/letsencrypt/live/aliare.com.ar/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/aliare.com.ar/privkey.pem;
+    ssl_trusted_certificate /etc/letsencrypt/live/aliare.com.ar/chain.pem;
+    include snippets/ssl.conf;
+    include snippets/letsencrypt.conf;
+
+    return 301 https://aliare.com.ar$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name aliare.com.ar;
+
+    ssl_certificate /etc/letsencrypt/live/aliare.com.ar/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/aliare.com.ar/privkey.pem;
+    ssl_trusted_certificate /etc/letsencrypt/live/aliare.com.ar/chain.pem;
+    include snippets/ssl.conf;
+    include snippets/letsencrypt.conf;
+
+
+    access_log /var/log/nginx/odoo.access.log;
+    error_log /var/log/nginx/odoo.error.log;
+
+    proxy_read_timeout 720s;
+    proxy_connect_timeout 720s;
+    proxy_send_timeout 720s;
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Real-IP $remote_addr;
+
+   location / {
+     proxy_redirect off;
+     proxy_pass http://odoo;
+   }
+
+   location /longpolling {
+       proxy_pass http://odoo-chat;
+   }
+
+   location ~* /web/static/ {
+       proxy_cache_valid 200 90m;
+       proxy_buffering    on;
+       expires 864000;
+       proxy_pass http://odoo;
+  }
+
+  # gzip
+  gzip_types text/css text/less text/plain text/xml application/xml application/json application/javascript;
+  gzip on;
+}
+# FIN archivo 
+
+#reinicio el nginx
+
+sudo systemctl reload nginx
+#si no anda
+
+sudo systemctl restart nginx.service
+
+#para renovar el certificado automaticamente:
+
+
+
+#se edita /etc/cron.d/certbot con este contenido
+
+SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+0 */12 * * * root test -x /usr/bin/certbot -a \! -d /run/systemd/system && perl -e 'sleep int(rand(43200))' && certbot -q renew --renew-hook "systemctl reload nginx"
+
 

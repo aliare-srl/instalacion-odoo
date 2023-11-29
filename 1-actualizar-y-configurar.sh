@@ -1,3 +1,6 @@
+#como se ejecuta un sh? 
+# 1ro darle permiso de ejecucion chmod +x /ruta/al/archivo.sh
+# ejecutar ./archivo.sh  (desde la carpeta que corresponda)
 #!/bin/bash
 
 echo "Configurando Locale: es_AR.UTF-8"

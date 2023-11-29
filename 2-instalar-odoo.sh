@@ -16,7 +16,7 @@ sudo apt install -y python3-dev libxml2-dev libxslt1-dev libldap2-dev libsasl2-d
 #sudo npm install -g less less-plugin-clean-css
 #sudo apt-get install -y node-less
 
-echo INSTALLANDO WKHTML2PDF
+echo INSTALANDO WKHTML2PDF
 echo -----------------------
 wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.focal_amd64.deb
 sudo apt -y install ./wkhtmltox_0.12.5-1.focal_amd64.deb
@@ -33,15 +33,26 @@ sudo apt install -y postgresql postgresql-server-dev-all
 echo CREANDO DATABASE USER $ODOO_USER.
 echo -----------------------
 echo 
-sudo su - postgres -c "createuser --no-superuser --createdb --login $ODOO_USER" 2> /dev/null || true
-echo
+sudo su - postgres -c "createuser --superuser --createdb --login $ODOO_USER" 
+#2> /dev/null || true
+#sudo su postgres
+#createuser --createdb --username postgres --no-createrole --no-superuser $ODOO_USER
+#odoo psw
+#psql
+#ALTER USER odoo WITH SUPERUSER;
+#\q
+#exit
+#echo USUARIO Odoo OK
 echo ODOO
 echo -----------------------
+
+
+
 cd /opt/$ODOO_USER
 sudo git clone https://github.com/odoo/odoo.git --depth 1 --branch 15.0 --single-branch 
 sudo chown -R $ODOO_USER:$ODOO_USER /opt/$ODOO_USER
 sudo su - odoo -c "cd /opt/$ODOO_USER/odoo && pip3 install -r requirements.txt"
-echo
+echo 
 echo POST-INSTALLATION
 echo -----------------------
 sudo mkdir -p /var/log/$ODOO_USER
@@ -103,12 +114,20 @@ EOF
 
 sudo chmod 0644 /etc/systemd/system/odoo.service
 
-sudo mkdir -p /var/opt/$odoouser/data_dir
-sudo chown -R $ODOO_USER:$ODOO_USER
+sudo mkdir -p /var/opt/$ODOO_USER/data_dir #estaba con minuscula
+#sudo chown -R $ODOO_USER:$ODOO_USER #me daba error chown: falta un operando después de «odoo:odoo»
+sudo chown -R $ODOO_USER:$ODOO_USER /var/opt/$ODOO_USER
+
+# en la ste linea me da este error
+#  File "/opt/odoo/.local/lib/python3.8/site-packages/psycopg2/__init__.py", line 127, in connect
+#    conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+#psycopg2.OperationalError: FATAL:  role "odoo" does not exist
 
 sudo su - odoo -c "/usr/bin/env python3 /opt/$ODOO_USER/odoo/odoo-bin -c $CONFIG_FILE --language es_AR --load-language es_AR --init base,web,point_of_sale --data-dir /var/opt/$ODOO_USER/data_dir --without-demo all --save --db-template template1 --no-database-list --stop-after-init"
+
 
 
 sudo systemctl enable odoo.service # Habilita el servicio para iniciarse con el SO
 echo "Para iniciar el servicio use: 'sudo systemctl start $ODOO_USER.service'"
 
+#echo "Para probar desde el http://ip:8069 usuario admin password admin"
