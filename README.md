@@ -6,7 +6,7 @@ El script 1, configura ubuntu en es_AR y timezone America/Argentina/Buenos_Aires
 Debe reinciar el servidor para que impacten los cambios.
 
 El script 2, actualiza ubuntu e instala las dependencias necesarias para odoo.
-Tamgién crea el usuario de odoo en el sistema operativo, este usuario será utilizado para ejecutar el servicio y para la instalación de dependencias con pip.
+También crea el usuario de odoo en el sistema operativo, este usuario será utilizado para ejecutar el servicio y para la instalación de dependencias con pip.
 Además habilita odoo como servicio pero no lo inicia debido a que habría que ejecutar los demás scripts con el servicio detenido.
 Finalmente, este script también instala postgresql y configura el usuario utilizado para la conexión de odoo. Pide el nombre para la base de datos que será utilizada.
 
