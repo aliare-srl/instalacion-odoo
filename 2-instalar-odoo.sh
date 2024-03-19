@@ -21,23 +21,6 @@ echo -----------------------
 wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.focal_amd64.deb
 sudo apt -y install ./wkhtmltox_0.12.5-1.focal_amd64.deb
 
-#las lineas siguientes agregué porque me daba error al ejecutar odoo-bin desde la linea de comandos (verificar con seba)
-sudo pip3 install PyPDF2 Werkzeug==0.11.15 python-dateutil reportlab psycopg2-binary
-
-sudo apt-get install libpq-dev python-dev libxml2-dev libxslt1-dev libldap2-dev libsasl2-dev libffi-dev libssl-dev
-
-pip3 install babel
-pip3 install passlib
-pip3 install lxml
-pip3 install decorator
-pip3 install polib
-pip3 install psutil
-pip3 install jinja2
-
-
-
-
-
 
 ODOO_USER=odoo
 echo CREANDO USUARIO $ODOO_USER
