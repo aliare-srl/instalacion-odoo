@@ -1,6 +1,6 @@
 #!/bin/sh
 # **Importante:** cuando se instala algo con sudo, dentro del un entorno virtual (con virtualenv por ejemplo) , la libreria o librerias se instalan en el SO global, no en el entorno virtual.
-# Ejecutar pip3 install son sudo. para asegurarse que se instale en el entorno virtual.
+# Ejecutar pip3 install son sudo. para asegurarse que se instale en el entorno virtual. Lo que es apt debera ser con sudo.
 
 
 
