@@ -24,3 +24,28 @@ sd rmall para eliminar las imágenes de mermori
 Mientras que con los siguientes comandos se puede iniciar nuevamente:
   $ oe -R 
   $ oe -r
+
+> ### Importante
+> Hay que modificar la configuración de openssl según indica [este](https://github.com/codize-app/odoo-argentina?tab=readme-ov-file#ubuntu-2004) documento de codize.
+> 
+> Editar el archivo de configuración:
+> 
+> `sudo nano /etc/ssl/openssl.cnf`
+> 
+> Agregar al inicio:
+> 
+> `openssl_conf = default_conf`
+> 
+> Agregar al final:
+> 
+> ```text
+>  [ default_conf ]
+>  ssl_conf = ssl_sect
+>  [ssl_sect]
+> system_default = system_default_sect
+> [system_default_sect]
+> MinProtocol = TLSv1.2
+> CipherString = DEFAULT:@SECLEVEL=1
+> ```
+> 
+> Guardar y reiniciar Odoo con el comando `sudo systemctl restart odoo.service`
